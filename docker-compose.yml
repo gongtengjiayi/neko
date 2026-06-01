@@ -1,0 +1,260 @@
+x-common: &common-python
+  restart: unless-stopped
+  networks: [nekocafe-net]
+  depends_on:
+    kafka: { condition: service_healthy }
+
+services:
+  # ============================================================
+  # 微服务
+  # ============================================================
+  reservation:
+    build: ./services/reservation
+    ports: ["8081:8080"]
+    environment:
+      DB_HOST: postgres-reservation
+      DB_NAME: reservation
+      DB_USER: reservation
+      DB_PASS: reservation123
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BROKER: kafka:9092
+    depends_on:
+      postgres-reservation: { condition: service_healthy }
+      redis: { condition: service_started }
+      kafka: { condition: service_healthy }
+    networks: [nekocafe-net]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  member:
+    build: ./services/member
+    ports: ["8082:8080"]
+    environment:
+      DB_HOST: postgres-member
+      DB_NAME: member
+      DB_USER: member
+      DB_PASS: member123
+      KAFKA_BROKER: kafka:9092
+    depends_on:
+      postgres-member: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks: [nekocafe-net]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  menu:
+    build: ./services/menu
+    ports: ["8083:8080"]
+    environment:
+      DB_HOST: postgres-menu
+      DB_NAME: menu
+      DB_USER: menu
+      DB_PASS: menu123
+      KAFKA_BROKER: kafka:9092
+    depends_on:
+      postgres-menu: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks: [nekocafe-net]
+
+  order:
+    build: ./services/order
+    ports: ["8084:8080"]
+    environment:
+      DB_HOST: postgres-order
+      DB_NAME: order
+      DB_USER: order
+      DB_PASS: order123
+      KAFKA_BROKER: kafka:9092
+    depends_on:
+      postgres-order: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks: [nekocafe-net]
+
+  payment:
+    build: ./services/payment
+    ports: ["8085:8080"]
+    environment:
+      DB_HOST: postgres-payment
+      DB_NAME: payment
+      DB_USER: payment
+      DB_PASS: payment123
+      KAFKA_BROKER: kafka:9092
+    depends_on:
+      postgres-payment: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks: [nekocafe-net]
+
+  notification:
+    build: ./services/notification
+    ports: ["8086:8080"]
+    environment:
+      DB_HOST: postgres-notification
+      DB_NAME: notification
+      DB_USER: notification
+      DB_PASS: notification123
+      KAFKA_BROKER: kafka:9092
+    depends_on:
+      postgres-notification: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks: [nekocafe-net]
+
+  # ============================================================
+  # API 网关
+  # ============================================================
+  gateway:
+    image: nginx:1.27-alpine
+    ports: ["8080:80"]
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - reservation
+      - member
+      - menu
+      - order
+      - payment
+      - notification
+    networks: [nekocafe-net]
+
+  # ============================================================
+  # 数据库 (每个微服务独立实例)
+  # ============================================================
+  postgres-reservation:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: reservation
+      POSTGRES_USER: reservation
+      POSTGRES_PASSWORD: reservation123
+    volumes: [pgdata-reservation:/var/lib/postgresql/data]
+    networks: [nekocafe-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reservation -d reservation"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-member:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: member
+      POSTGRES_USER: member
+      POSTGRES_PASSWORD: member123
+    volumes: [pgdata-member:/var/lib/postgresql/data]
+    networks: [nekocafe-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U member -d member"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-menu:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: menu
+      POSTGRES_USER: menu
+      POSTGRES_PASSWORD: menu123
+    volumes: [pgdata-menu:/var/lib/postgresql/data]
+    networks: [nekocafe-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U menu -d menu"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-order:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: order
+      POSTGRES_USER: order
+      POSTGRES_PASSWORD: order123
+    volumes: [pgdata-order:/var/lib/postgresql/data]
+    networks: [nekocafe-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U order -d order"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-payment:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: payment
+      POSTGRES_USER: payment
+      POSTGRES_PASSWORD: payment123
+    volumes: [pgdata-payment:/var/lib/postgresql/data]
+    networks: [nekocafe-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment -d payment"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-notification:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notification
+      POSTGRES_USER: notification
+      POSTGRES_PASSWORD: notification123
+    volumes: [pgdata-notification:/var/lib/postgresql/data]
+    networks: [nekocafe-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notification -d notification"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # 缓存
+  # ============================================================
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    volumes: [redis-data:/data]
+    networks: [nekocafe-net]
+    command: redis-server --appendonly yes
+
+  # ============================================================
+  # 消息队列 (Kafka + ZooKeeper)
+  # ============================================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.7.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks: [nekocafe-net]
+
+  kafka:
+    image: confluentinc/cp-kafka:7.7.0
+    ports: ["9092:9092"]
+    depends_on: [zookeeper]
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks: [nekocafe-net]
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+networks:
+  nekocafe-net:
+    driver: bridge
+
+volumes:
+  pgdata-reservation:
+  pgdata-member:
+  pgdata-menu:
+  pgdata-order:
+  pgdata-payment:
+  pgdata-notification:
+  redis-data:

@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment
+.env
+.env.local
+*.pem
+service-account.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# Logs
+*.log
+npm-debug.log*

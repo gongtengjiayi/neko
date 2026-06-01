@@ -1,0 +1,26 @@
+{
+  "name": "nekocafe-member-service",
+  "version": "0.1.0",
+  "description": "NekoCafé 会员服务 - 会员与积分管理",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "lint": "eslint src/",
+    "test": "jest --coverage"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "pg": "^8.13.0",
+    "kafkajs": "^2.2.4",
+    "uuid": "^10.0.0",
+    "joi": "^17.13.0",
+    "winston": "^3.14.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0",
+    "nodemon": "^3.1.0",
+    "eslint": "^9.0.0"
+  }
+}
