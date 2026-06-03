@@ -94,7 +94,7 @@ jobs:
       - name: Build image for scanning
         run: docker build -t nekocafe/${{ matrix.service }}:${{ github.sha }} ./services/${{ matrix.service }}
       - name: Trivy scan
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: nekocafe/${{ matrix.service }}:${{ github.sha }}
           format: table
