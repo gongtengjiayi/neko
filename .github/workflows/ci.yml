@@ -176,5 +176,5 @@ jobs:
           context: ./services/${{ matrix.service }}
           push: true
           tags: |
-            ${{ env.REGISTRY }}/nekocafe/${{ matrix.service }}:${{ env.IMAGE_TAG }}
-            ${{ env.REGISTRY }}/nekocafe/${{ matrix.service }}:latest
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/nekocafe-${{ matrix.service }}:${{ env.IMAGE_TAG }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/nekocafe-${{ matrix.service }}:latest
